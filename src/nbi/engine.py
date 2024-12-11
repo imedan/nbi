@@ -1249,7 +1249,7 @@ class NBI:
                 return self.y
             else:
                 params = []
-                if isinstance(self.prior, pm.model.core.Model):
+                if isinstance(self.prior, pm.model.Model):
                     for label in self.param_names:
                         params.append(pm.draw(self.prior[label], n))
                 else:
