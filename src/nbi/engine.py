@@ -398,7 +398,7 @@ class NBI:
             self._init_scheduler(min_lr, decay_type=decay_type)
             x_round, y_round = self.get_round_data(n_reuse)
             data_container = BaseContainer(
-                x_round, y_round, f_test=0, f_val=f_val, process=self.process
+                x_round, y_round, self.x_file, f_test=0, f_val=f_val, process=self.process
             )
             self._init_loader(data_container, batch_size, workers=workers)
 
@@ -539,9 +539,10 @@ class NBI:
         with h5py.File(os.path.join(self.directory, str(self.round)) + "_x_all.hdf5", "w") as f:
             f.create_dataset("x_all", data=x_sims)
 
-        hf = h5py.File(os.path.join(self.directory, str(self.round)) + "_x.hdf5", "r")
-        self.x_all.append(hf['x'])
+        # hf = h5py.File(os.path.join(self.directory, str(self.round)) + "_x.hdf5", "r")
+        self.x_all.append(np.array(x_path)[good])
         self.y_all.append(np.array(ys)[good])
+        self.x_file = os.path.join(self.directory, str(self.round)) + "_x.hdf5"
 
         weights = self.importance_reweight(x_obs, self.x_all[-1], self.y_all[-1])
         self.weights.append(weights)
@@ -616,7 +617,11 @@ class NBI:
             return np.concatenate(self.x_all), np.concatenate(self.y_all)
         else:
             x_round = self.x_all[max(0, self.round - n_reuse) : self.round + 1]
-            if not isinstance(x_round, h5py._hl.dataset.Dataset):
+            if isinstance(x_round, h5py._hl.dataset.Dataset):
+                pass
+            elif len(x_round) == 1:
+                x_round = x_round[0]
+            else:
                 x_round = np.concatenate(x_round)
 
             y_round = self.y_all[max(0, self.round - n_reuse) : self.round + 1]

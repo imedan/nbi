@@ -1,7 +1,9 @@
 import copy
+import os
 
 import numpy as np
 from torch.utils.data import Dataset
+import h5py
 
 
 class Data:
@@ -13,7 +15,7 @@ class Data:
 
 
 class BaseContainer(Dataset):
-    def __init__(self, x, y, f_val=0.2, f_test=0, split="all", process=None):
+    def __init__(self, x, y, x_file, f_val=0.2, f_test=0, split="all", process=None):
         # create data partitions
         N = len(x)
         p_train = 1 - f_val - f_test
@@ -27,6 +29,8 @@ class BaseContainer(Dataset):
         self.all = Data(x, y)
         self.set_split(split)
         self.process = process
+
+        self.x_file = x_file
 
     def set_split(self, split="all"):
         data = getattr(self, split)
@@ -47,7 +51,11 @@ class BaseContainer(Dataset):
         return len(self.x)
 
     def __getitem__(self, i, **kwargs):
-        if isinstance(self.x[i], np.str_):
+        if os.path.isfile(self.x_file):
+            idx = int(self.x[i].split('/')[-1].split('.')[0])  # need this to get correct index in HDF5 file?
+            x = h5py.File(self.x_file, "r")['x'][idx]
+            y = self.y[i]
+        elif isinstance(self.x[i], np.str_):
             x, y = np.load(self.x[i], allow_pickle=True), self.y[i]
         else:
             x, y = self.x[i], self.y[i]
