@@ -616,7 +616,7 @@ class NBI:
             return np.concatenate(self.x_all), np.concatenate(self.y_all)
         else:
             x_round = self.x_all[max(0, self.round - n_reuse) : self.round + 1]
-            if not isinstance(x_round, hf._hl.dataset.Dataset):
+            if not isinstance(x_round, h5py._hl.dataset.Dataset):
                 x_round = np.concatenate(x_round)
 
             y_round = self.y_all[max(0, self.round - n_reuse) : self.round + 1]
