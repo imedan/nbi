@@ -15,17 +15,20 @@ def parallel_simulate(args):
     :return: mask of good simulations
     """
 
-    thetas, paths, simulator = args
+    thetas, paths, simulator, save_indv = args
     use_tqdm = "/0.npy" in paths[0]
+    simulations = []
     mask = []
     if use_tqdm:
         print("Generating simulations")
     for i, params in tqdm(enumerate(thetas), disable=not use_tqdm):
         simulation = simulator(params)
-        np.save(paths[i], simulation)
+        if save_indv:
+            np.save(paths[i], simulation)
+        simulations.append(simulation)
         mask.append(not np.isnan(simulation).any() and not np.isinf(simulation).any())
 
-    return mask
+    return simulations, mask
 
 
 def add_noise(x_err, x, y=None):

@@ -114,6 +114,10 @@ class NBI:
     scale_reinit : bool, optional
         If True, re-initializes data pre-processing scales every round. Default is True.
 
+    save_indv : str, optional
+        If True, then save each training sample as indivdual file. If False then
+        save in one file under x_all.
+
     """
 
     corner_kwargs = {
@@ -145,6 +149,7 @@ class NBI:
         tqdm_notebook=False,
         network_reinit=False,
         scale_reinit=True,
+        save_indv=False
     ):
         self.device = device
         self.init_env()
@@ -190,6 +195,7 @@ class NBI:
         self.y_mean = None
         self.y_std = None
         self.norm = []
+        self.save_indv = save_indv
 
         self.prior = priors
         self.param_names = labels
@@ -257,7 +263,7 @@ class NBI:
         decay_type="SGDR",
         plot=True,
         f_accept_min=-1,
-        workers=8,
+        workers=8
     ):
         """
         Fit the Neural Bayesian Inference Engine.
@@ -519,11 +525,14 @@ class NBI:
 
         np.save(os.path.join(self.directory, str(self.round)) + "_y_all.npy", ys)
 
-        x_path, good = self.simulate(ys)
-        np.save(os.path.join(self.directory, str(self.round)) + "_x.npy", x_path[good])
+        x_path, good, x_sims = self.simulate(ys)
+        np.save(os.path.join(self.directory, str(self.round)) + "_x_path.npy", x_path[good])
+        np.save(os.path.join(self.directory, str(self.round)) + "_x.npy", x_sims[good])
         np.save(os.path.join(self.directory, str(self.round)) + "_y.npy", ys[good])
 
-        self.x_all.append(np.array(x_path)[good])
+        np.save(os.path.join(self.directory, str(self.round)) + "_x_all.npy", x_sims)
+
+        self.x_all.append(np.array(x_sims)[good])
         self.y_all.append(np.array(ys)[good])
 
         weights = self.importance_reweight(x_obs, self.x_all[-1], self.y_all[-1])
@@ -890,10 +899,11 @@ class NBI:
         if x_err is None and log_like is None:
             return ys
 
-        x_path, good = self.simulate(ys)
+        x_path, good, x_sims = self.simulate(ys)
         x_path = x_path[good]
+        x_sims = x_sims[good]
         ys = ys[good]
-        weights = self.importance_reweight(x, x_path, ys)
+        weights = self.importance_reweight(x, x_sims, ys)
 
         neff = 1 / (weights**2).sum() - 1
 
@@ -907,10 +917,11 @@ class NBI:
             n_required = min(n_required, n_max - n_samples)
 
             ys_extra = self._draw_params(x, n_required)
-            x_path, good = self.simulate(ys_extra)
+            x_path, good, x_sims = self.simulate(ys_extra)
             x_path = x_path[good]
+            x_sims = x_sims[good]
             ys_extra = ys_extra[good]
-            weights_extra = self.importance_reweight(x, x_path, ys_extra)
+            weights_extra = self.importance_reweight(x, x_sims, ys_extra)
 
             neff_extra = 1 / (weights_extra**2).sum() - 1
             print("Total effective sample size N =", "%.1f" % (neff + neff_extra))
@@ -1003,14 +1014,16 @@ class NBI:
                     thetas[njobs[i] : njobs[i + 1]],
                     paths[njobs[i] : njobs[i + 1]],
                     self.simulator,
+                    self.save_indv,
                 ]
                 for i in range(self.n_jobs)
             ]
 
             with Pool(self.n_jobs) as p:
-                masks = p.map(parallel_simulate, jobs)
-            masks = np.concatenate(masks)
-            return paths, masks
+                res = p.map(parallel_simulate, jobs)
+            simulations = np.array([r[0] for r in res])
+            masks = np.array([r[1] for r in res])
+            return paths, masks, simulations
 
     def _train_step(self):
         """
