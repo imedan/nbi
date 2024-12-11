@@ -1021,8 +1021,8 @@ class NBI:
 
             with Pool(self.n_jobs) as p:
                 res = p.map(parallel_simulate, jobs)
-            simulations = np.array([r[0] for r in res])
-            masks = np.array([r[1] for r in res])
+            simulations = np.concatenate([r[0] for r in res])
+            masks = np.concatenate([r[1] for r in res])
             return paths, masks, simulations
 
     def _train_step(self):
