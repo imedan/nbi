@@ -18,6 +18,7 @@ from torch.optim.lr_scheduler import (
     MultiStepLR,
     ReduceLROnPlateau,
 )
+import pymc as pm
 
 # this seems to be required for some environments
 from torch.utils.data import DataLoader, dataloader
@@ -149,7 +150,10 @@ class NBI:
         self.init_env()
 
         if state_dict is not None:
-            _state_dict = torch.load(state_dict)
+            if device == 'cpu':
+                _state_dict = torch.load(state_dict, map_location='cpu')
+            else:
+                _state_dict = torch.load(state_dict)
             flow_config_all = _state_dict["flow_config"]
             featurizer = (
                 featurizer
@@ -1232,8 +1236,13 @@ class NBI:
                 return self.y
             else:
                 params = []
-                for prior in self.prior:
-                    params.append(prior.rvs(n))
+                if isinstance(self.prior, pm.model.core.Model):
+                    sample = pm.sample_prior_predictive(n, self.prior)['prior']
+                    for label in self.param_names:
+                        params.append(np.array(sample[label]).reshape(n))
+                else:
+                    for prior in self.prior:
+                        params.append(prior.rvs(n))
                 params = np.array(params).T
                 return params
         # 2+ round: sample from surrogate posterior
