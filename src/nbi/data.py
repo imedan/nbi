@@ -31,6 +31,7 @@ class BaseContainer(Dataset):
         self.process = process
 
         self.x_file = x_file
+        self.dataset = None
 
     def set_split(self, split="all"):
         data = getattr(self, split)
@@ -52,8 +53,10 @@ class BaseContainer(Dataset):
 
     def __getitem__(self, i, **kwargs):
         if os.path.isfile(self.x_file):
+            if self.dataset is None:
+                self.dataset = h5py.File(self.x_file, "r")['x']
             idx = int(self.x[i].split('/')[-1].split('.')[0])  # need this to get correct index in HDF5 file?
-            x = h5py.File(self.x_file, "r")['x'][idx]
+            x = self.dataset[idx]
             y = self.y[i]
         elif isinstance(self.x[i], np.str_):
             x, y = np.load(self.x[i], allow_pickle=True), self.y[i]
