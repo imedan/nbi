@@ -19,6 +19,7 @@ from torch.optim.lr_scheduler import (
     ReduceLROnPlateau,
 )
 import pymc as pm
+import h5py
 
 # this seems to be required for some environments
 from torch.utils.data import DataLoader, dataloader
@@ -532,7 +533,14 @@ class NBI:
 
         np.save(os.path.join(self.directory, str(self.round)) + "_x_all.npy", x_sims)
 
-        self.x_all.append(np.array(x_sims)[good])
+        # save hdf5 versions for memory purposes
+        with h5py.File(os.path.join(self.directory, str(self.round)) + "_x.hdf5", "w") as f:
+            f.create_dataset("x", data=x_sims[good])
+        with h5py.File(os.path.join(self.directory, str(self.round)) + "_x_all.hdf5", "w") as f:
+            f.create_dataset("x_all", data=x_sims)
+
+        hf = h5py.File(os.path.join(self.directory, str(self.round)) + "_x.hdf5", "r")
+        self.x_all.append(hf['x'])
         self.y_all.append(np.array(ys)[good])
 
         weights = self.importance_reweight(x_obs, self.x_all[-1], self.y_all[-1])
@@ -608,7 +616,8 @@ class NBI:
             return np.concatenate(self.x_all), np.concatenate(self.y_all)
         else:
             x_round = self.x_all[max(0, self.round - n_reuse) : self.round + 1]
-            x_round = np.concatenate(x_round)
+            if not isinstance(x_round, hf._hl.dataset.Dataset):
+                x_round = np.concatenate(x_round)
 
             y_round = self.y_all[max(0, self.round - n_reuse) : self.round + 1]
             y_round = np.concatenate(y_round)
