@@ -1237,9 +1237,8 @@ class NBI:
             else:
                 params = []
                 if isinstance(self.prior, pm.model.core.Model):
-                    sample = pm.sample_prior_predictive(n, self.prior)['prior']
                     for label in self.param_names:
-                        params.append(np.array(sample[label]).reshape(n))
+                        params.append(pm.draw(self.prior[label], n))
                 else:
                     for prior in self.prior:
                         params.append(prior.rvs(n))
@@ -1298,8 +1297,12 @@ class NBI:
             return np.zeros(len(y))
         else:
             log_prob = np.zeros(len(y))
-            for i, prior in enumerate(self.prior):
-                log_prob += prior.logpdf(y[:, i])
+            if isinstance(self.prior, pm.model.core.Model):
+                for i, label in enumerate(self.param_names):
+                    log_prob += pm.logp(self.prior[label], y[:, i]).eval()
+            else:
+                for i, prior in enumerate(self.prior):
+                    log_prob += prior.logpdf(y[:, i])
         return log_prob
 
     def log_like(self, x_obs, x, y):
