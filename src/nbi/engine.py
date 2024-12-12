@@ -117,7 +117,8 @@ class NBI:
 
     save_indv : str, optional
         If True, then save each training sample as indivdual file. If False then
-        save in one file under x_all.
+        save in one HDF5 file. In False case, also read from this single file when doing
+        the training/test split.
 
     """
 
@@ -528,21 +529,22 @@ class NBI:
 
         x_path, good, x_sims = self.simulate(ys)
         np.save(os.path.join(self.directory, str(self.round)) + "_x_path.npy", x_path[good])
-        np.save(os.path.join(self.directory, str(self.round)) + "_x.npy", x_sims[good])
         np.save(os.path.join(self.directory, str(self.round)) + "_y.npy", ys[good])
 
-        np.save(os.path.join(self.directory, str(self.round)) + "_x_all.npy", x_sims)
+        if not self.save_indv:
+            # save hdf5 versions for memory purposes
+            with h5py.File(os.path.join(self.directory, str(self.round)) + "_x.hdf5", "w") as f:
+                f.create_dataset("x", data=x_sims[good])
+            with h5py.File(os.path.join(self.directory, str(self.round)) + "_x_all.hdf5", "w") as f:
+                f.create_dataset("x_all", data=x_sims)
 
-        # save hdf5 versions for memory purposes
-        with h5py.File(os.path.join(self.directory, str(self.round)) + "_x.hdf5", "w") as f:
-            f.create_dataset("x", data=x_sims[good])
-        with h5py.File(os.path.join(self.directory, str(self.round)) + "_x_all.hdf5", "w") as f:
-            f.create_dataset("x_all", data=x_sims)
-
-        # hf = h5py.File(os.path.join(self.directory, str(self.round)) + "_x.hdf5", "r")
         self.x_all.append(np.array(x_path)[good])
         self.y_all.append(np.array(ys)[good])
-        self.x_file = os.path.join(self.directory, str(self.round)) + "_x.hdf5"
+        if self.save_indv:
+            self.x_file = os.path.join(self.directory, str(self.round)) + "_x.hdf5"
+        else:
+            # just make blank string to miss this in BaseContainer ?
+            self.x_file = ''
 
         weights = self.importance_reweight(x_obs, self.x_all[-1], self.y_all[-1])
         self.weights.append(weights)
@@ -917,7 +919,10 @@ class NBI:
         x_path = x_path[good]
         x_sims = x_sims[good]
         ys = ys[good]
-        weights = self.importance_reweight(x, x_sims, ys)
+        if self.save_indv:
+            weights = self.importance_reweight(x, x_path, ys)
+        else:
+            weights = self.importance_reweight(x, x_sims, ys)
 
         neff = 1 / (weights**2).sum() - 1
 
@@ -935,7 +940,10 @@ class NBI:
             x_path = x_path[good]
             x_sims = x_sims[good]
             ys_extra = ys_extra[good]
-            weights_extra = self.importance_reweight(x, x_sims, ys_extra)
+            if self.save_indv:
+                weights_extra = self.importance_reweight(x, x_path, ys_extra)
+            else:
+                weights_extra = self.importance_reweight(x, x_sims, ys_extra)
 
             neff_extra = 1 / (weights_extra**2).sum() - 1
             print("Total effective sample size N =", "%.1f" % (neff + neff_extra))

@@ -25,7 +25,10 @@ def parallel_simulate(args):
         simulation = simulator(params)
         if save_indv:
             np.save(paths[i], simulation)
-        simulations.append(simulation)
+            simulations.append([])
+        else:
+            # only save the simulations if saving to HDF5 file
+            simulations.append(simulation)
         mask.append(not np.isnan(simulation).any() and not np.isinf(simulation).any())
 
     return simulations, mask
