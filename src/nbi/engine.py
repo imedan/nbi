@@ -540,7 +540,7 @@ class NBI:
 
         self.x_all.append(np.array(x_path)[good])
         self.y_all.append(np.array(ys)[good])
-        if self.save_indv:
+        if not self.save_indv:
             self.x_file = os.path.join(self.directory, str(self.round)) + "_x.hdf5"
         else:
             # just make blank string to miss this in BaseContainer ?
