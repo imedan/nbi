@@ -1334,7 +1334,11 @@ class NBI:
             log_prob = np.zeros(len(y))
             if isinstance(self.prior, pm.model.core.Model):
                 for i, label in enumerate(self.param_names):
-                    log_prob += pm.logp(self.prior[label], y[:, i]).eval()
+                    try:
+                        log_prob += pm.logp(self.prior[label], y[:, i]).eval()
+                    except NotImplementedError:
+                        # hack to deal with arctan2 not implemented
+                        log_prob += pm.logp(self.prior[label + '_unf'], y[:, i]).eval()
             else:
                 for i, prior in enumerate(self.prior):
                     log_prob += prior.logpdf(y[:, i])
