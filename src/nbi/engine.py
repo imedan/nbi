@@ -1272,8 +1272,11 @@ class NBI:
             else:
                 params = []
                 if isinstance(self.prior, pm.model.Model):
+                    prior_samps = pm.sample_prior_predictive(n,
+                                                             self.prior,
+                                                             self.param_names)['prior']
                     for label in self.param_names:
-                        params.append(pm.draw(self.prior[label], n))
+                        params.append(np.array(prior_samps[label]).reshape(n))
                 else:
                     for prior in self.prior:
                         params.append(prior.rvs(n))
