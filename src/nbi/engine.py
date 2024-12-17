@@ -228,6 +228,8 @@ class NBI:
         self.prev_y_mean = []
         self.prev_y_std = []
 
+        self.logp = None
+
         try:
             os.mkdir(self.directory)
         except:
@@ -1336,12 +1338,32 @@ class NBI:
         else:
             log_prob = np.zeros(len(y))
             if isinstance(self.prior, pm.model.core.Model):
+                # compile logp if not done yet
+                if self.logp is None:
+                    self.logp = {}
+                    prior_keys = list(self.prior.named_vars.keys())
+                    # get the models to use and catch not implemented
+                    mods_use = []
+                    for label in self.param_names:
+                        if label + '_unf' in prior_keys:
+                           mods_use.append(self.prior[label + '_unf'])
+                        else:
+                            mods_use.append(self.prior[label])
+                    # now compile the logp
+                    for label in self.param_names:
+                        if label + '_unf' in prior_keys:
+                            self.logp[label] = pm.compile_pymc(mods_use,
+                                                               pm.logp(self.prior[label + '_unf'],
+                                                                       self.prior[label + '_unf']),
+                                                               on_unused_input='ignore')
+                        else:
+                            self.logp[label] = pm.compile_pymc(mods_use,
+                                                               pm.logp(self.prior[label],
+                                                                       self.prior[label]),
+                                                               on_unused_input='ignore')
                 for i, label in enumerate(self.param_names):
-                    try:
-                        log_prob += pm.logp(self.prior[label], y[:, i]).eval()
-                    except NotImplementedError:
-                        # hack to deal with arctan2 not implemented
-                        log_prob += pm.logp(self.prior[label + '_unf'], y[:, i]).eval()
+                    for j in range(len(y[:, i])):
+                        log_prob[j] += self.logp[label](*y[j, :])
             else:
                 for i, prior in enumerate(self.prior):
                     log_prob += prior.logpdf(y[:, i])
