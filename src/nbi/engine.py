@@ -1345,13 +1345,13 @@ class NBI:
                     # get the models to use and catch not implemented
                     mods_use = []
                     for label in self.param_names:
-                        if label + '_unf' in prior_keys:
+                        if label + '_unf' in prior_keys:  # this is hack workaround
                            mods_use.append(self.prior[label + '_unf'])
                         else:
                             mods_use.append(self.prior[label])
                     # now compile the logp
                     for label in self.param_names:
-                        if label + '_unf' in prior_keys:
+                        if label + '_unf' in prior_keys:  # this is hack workaround
                             self.logp[label] = pm.compile_pymc(mods_use,
                                                                pm.logp(self.prior[label + '_unf'],
                                                                        self.prior[label + '_unf']),
