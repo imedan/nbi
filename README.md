@@ -6,7 +6,7 @@
 
 This is a forked version of `nbi` from [here](https://github.com/kmzzhang/nbi). 
 In this fork, I have added changes to 1) allow for [PyMC](https://www.pymc.io/welcome.html) models as priors and 
-2) allow for simulated training sets to be loaded from [HDF5](https://www.hdfgroup.org/solutions/hdf5/) files.
+2) allow for simulated training sets to be saved/loaded from [HDF5](https://www.hdfgroup.org/solutions/hdf5/) files.
 
 ## nbi: neural bayesian inference
 
