@@ -2,6 +2,12 @@
 [![Tests](https://github.com/kmzzhang/nbi/actions/workflows/tests.yml/badge.svg)](https://github.com/kmzzhang/nbi/actions/workflows/tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/nbi/badge/?version=latest)](https://nbi.readthedocs.io/en/latest/?badge=latest)
 
+# Repository Notes
+
+This is a forked version of `nbi` from [here](https://github.com/kmzzhang/nbi). 
+In this fork, I have added changes to 1) allow for [PyMC](https://www.pymc.io/welcome.html) models as priors and 
+2) allow for simulated training sets to be loaded from [HDF5](https://www.hdfgroup.org/solutions/hdf5/) files.
+
 ## nbi: neural bayesian inference
 
 [Documentation](https://nbi.readthedocs.io/en/latest/)
